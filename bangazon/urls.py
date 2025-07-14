@@ -16,7 +16,7 @@ router.register(r'users', Users, 'user')
 router.register(r'orders', Orders, 'order')
 router.register(r'cart', Cart, 'cart')
 router.register(r'payment-types', Payments, 'payment')
-router.register(r'my-profile', Profile, 'profile')
+router.register(r'profile', Profile, 'profile')
 
 
 # Wire up our API using automatic URL routing.
