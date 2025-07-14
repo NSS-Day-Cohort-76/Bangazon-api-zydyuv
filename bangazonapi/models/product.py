@@ -61,7 +61,7 @@ class Product(SafeDeleteModel):
         total_rating = 0
         for rating in ratings:
             total_rating += rating.rating
-
+        
         avg = total_rating / len(ratings)
         return avg
 
