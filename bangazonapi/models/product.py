@@ -6,25 +6,44 @@ from .customer import Customer
 from .productcategory import ProductCategory
 from .orderproduct import OrderProduct
 from .productrating import ProductRating
+from .store import Store
 
 
 class Product(SafeDeleteModel):
 
     _safedelete_policy = SOFT_DELETE
-    name = models.CharField(max_length=50,)
+    name = models.CharField(
+        max_length=50,
+    )
     customer = models.ForeignKey(
-        Customer, on_delete=models.DO_NOTHING, related_name='products')
+        Customer, on_delete=models.DO_NOTHING, related_name="products"
+    )
     price = models.FloatField(
-        validators=[MinValueValidator(0.00), MaxValueValidator(10000.00)],)
-    description = models.CharField(max_length=255,)
-    quantity = models.IntegerField(validators=[MinValueValidator(0)],)
+        validators=[MinValueValidator(0.00), MaxValueValidator(10000.00)],
+    )
+    description = models.CharField(
+        max_length=255,
+    )
+    quantity = models.IntegerField(
+        validators=[MinValueValidator(0)],
+    )
     created_date = models.DateField(auto_now_add=True)
     category = models.ForeignKey(
-        ProductCategory, on_delete=models.DO_NOTHING, related_name='products')
-    location = models.CharField(max_length=50,)
+        ProductCategory, on_delete=models.DO_NOTHING, related_name="products"
+    )
+    store = models.ForeignKey(
+        "Store", on_delete=models.CASCADE, related_name="products", null=True
+    )
+    location = models.CharField(
+        max_length=50,
+    )
     image_path = models.ImageField(
-        upload_to='products', height_field=None,
-        width_field=None, max_length=None, null=True)
+        upload_to="products",
+        height_field=None,
+        width_field=None,
+        max_length=None,
+        null=True,
+    )
 
     @property
     def number_sold(self):
@@ -34,7 +53,8 @@ class Product(SafeDeleteModel):
             int -- Number items on completed orders
         """
         sold = OrderProduct.objects.filter(
-            product=self, order__payment_type__isnull=False)
+            product=self, order__payment_type__isnull=False
+        )
         return sold.count()
 
     @property
@@ -65,7 +85,6 @@ class Product(SafeDeleteModel):
         except ZeroDivisionError:
             return 0.0
 
-
     class Meta:
-        verbose_name = ("product")
-        verbose_name_plural = ("products")
+        verbose_name = "product"
+        verbose_name_plural = "products"
