@@ -1,5 +1,5 @@
-
 """View module for handling requests about line items"""
+
 from django.http import HttpResponseServerError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -9,14 +9,15 @@ from bangazonapi.models import OrderProduct, Order, Product, Customer
 
 
 class LineItemSerializer(serializers.HyperlinkedModelSerializer):
-    """JSON serializer for line items """
+    """JSON serializer for line items"""
+
     class Meta:
         model = OrderProduct
         url = serializers.HyperlinkedIdentityField(
-            view_name='lineitem',
-            lookup_field='id'
+            view_name="lineitem", lookup_field="id"
         )
-        fields = ('id', 'url', 'order', 'product')
+        fields = ("id", "url", "order", "product")
+
 
 class LineItems(ViewSet):
     """Line items for Bangazon orders"""
@@ -53,12 +54,12 @@ class LineItems(ViewSet):
             customer = Customer.objects.get(user=request.auth.user)
             line_item = OrderProduct.objects.get(pk=pk, order__customer=customer)
 
-            serializer = LineItemSerializer(line_item, context={'request': request})
+            serializer = LineItemSerializer(line_item, context={"request": request})
 
             return Response(serializer.data)
 
         except OrderProduct.DoesNotExist as ex:
-            return Response({'message': ex.args[0]}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": ex.args[0]}, status=status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, pk=None):
         """
@@ -78,10 +79,14 @@ class LineItems(ViewSet):
             customer = Customer.objects.get(user=request.auth.user)
             order_product = OrderProduct.objects.get(pk=pk, order__customer=customer)
 
+            order_product.delete()
+
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
         except OrderProduct.DoesNotExist as ex:
-            return Response({'message': ex.args[0]}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": ex.args[0]}, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as ex:
-            return Response({'message': ex.args[0]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"message": ex.args[0]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
