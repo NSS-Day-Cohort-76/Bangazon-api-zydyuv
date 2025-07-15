@@ -32,10 +32,10 @@ class Payments(ViewSet):
             Response -- JSON serialized payment instance
         """
         new_payment = Payment()
-        new_payment.merchant_name = request.data["merchant_name"]
-        new_payment.account_number = request.data["account_number"]
-        new_payment.expiration_date = request.data["create_date"]
-        new_payment.create_date = request.data["expiration_date"]
+        new_payment.merchant_name = request.data["merchant"]
+        new_payment.account_number = request.data["acctNumber"]
+        new_payment.expiration_date = request.data["expiration_date"]
+        # new_payment.create_date = request.data["create_date"]
         customer = Customer.objects.get(user=request.auth.user)
         new_payment.customer = customer
         new_payment.save()
@@ -79,7 +79,7 @@ class Payments(ViewSet):
 
     def list(self, request):
         """Handle GET requests to payment type resource"""
-        customer_id = Customer.objects.get(user=request.user)
+        customer_id = Customer.objects.get(user=request.auth.user)
         payment_types = Payment.objects.filter(customer=customer_id)
 
         serializer = PaymentSerializer(
