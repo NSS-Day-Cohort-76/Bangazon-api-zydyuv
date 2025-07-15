@@ -22,7 +22,21 @@ class StoreSerializer(serializers.ModelSerializer):
 
 
 class StoreViewSet(viewsets.ViewSet):
+    permission_classes = [isAuth]
+
     def list(self, request):
         stores = Store.objects.all()
         serializer = StoreSerializer(stores, many=True, context={"request": request})
         return Response(serializer.data)
+
+    def create(self, request):
+        user = request.auth.user
+
+        new_store = Store.objects.create(
+            name=request.data["name"],
+            description=request.data["description"],
+            owner=user,
+        )
+
+        serializer = StoreSerializer(new_store, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
