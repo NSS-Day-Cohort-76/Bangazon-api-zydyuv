@@ -84,30 +84,44 @@ class Orders(ViewSet):
 
     def update(self, request, pk=None):
         """
-        @api {PUT} /order/:id PUT new payment for order
-        @apiName AddPayment
-        @apiGroup Orders
-
-        @apiHeader {String} Authorization Auth token
-        @apiHeaderExample {String} Authorization
-            Token 9ba45f09651c5b0c404f37a2d2572c026c146611
-
-        @apiParam {id} id Order Id route parameter
-        @apiParam {id} payment_type Payment Id to pay for the order
-        @apiParamExample {json} Input
-            {
-                "payment_type": 6
-            }
-
-        @apiSuccessExample {json} Success
-            HTTP/1.1 204 No Content
+        Handle PUT request to assign payment type to an order
         """
-        customer = Customer.objects.get(user=request.auth.user)
-        order = Order.objects.get(pk=pk, customer=customer)
-        order.payment_type = request.data["payment_type"]
-        order.save()
+        try:
 
-        return Response({}, status=status.HTTP_204_NO_CONTENT)
+            customer = Customer.objects.get(user=request.user)
+
+            
+            order = Order.objects.get(pk=pk, customer=customer)
+
+            
+            payment_type_id = request.data.get("payment_type")
+            if not payment_type_id:
+                return Response(
+                    {"message": "Missing payment_type"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            
+            try:
+                payment = Payment.objects.get(pk=payment_type_id, customer=customer)
+            except Payment.DoesNotExist:
+                return Response(
+                    {"message": "Invalid payment type"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            
+            order.payment_type = payment
+            order.save()
+
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+        except Customer.DoesNotExist:
+            return Response({"message": "Customer not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Order.DoesNotExist:
+            return Response({"message": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request):
         """
