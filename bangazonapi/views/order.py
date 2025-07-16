@@ -154,3 +154,16 @@ class Orders(ViewSet):
             orders, many=True, context={'request': request})
 
         return Response(json_orders.data)
+
+    
+    def create(self, request):
+        customer = Customer.objects.get(user=request.auth.user)
+        product_id = request.data.get("product_id")
+
+        if not product_id:
+            return Response ({"message": "Missing product_id"}, status=status.HTTP_400_BAD_REQUEST)
+        order, created = Order.objects.get_or_create(customer=customer, payment_typ=None)
+
+        product = Product.objects.get(pk=product_id)
+        OrderProduct.objects.create(order=order, product=product)
+        return Response({"message": f"Added {product.name} to your cart"}, status=status.HTTP_201_CREATED)
