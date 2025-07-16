@@ -55,7 +55,7 @@ class Product(SafeDeleteModel):
         sold = OrderProduct.objects.filter(
             product=self, order__payment_type__isnull=False
         )
-        print(f"Product {self.id} has been sold {sold.count()} times.")
+
         return sold.count()
 
     @property
