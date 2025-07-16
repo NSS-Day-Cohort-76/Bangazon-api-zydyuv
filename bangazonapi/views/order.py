@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from bangazonapi.models import Order, Payment, Customer, Product, OrderProduct
 from .product import ProductSerializer
+from .paymenttype import PaymentSerializer
 
 
 class OrderLineItemSerializer(serializers.HyperlinkedModelSerializer):
@@ -28,6 +29,7 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
     """JSON serializer for customer orders"""
 
     lineitems = OrderLineItemSerializer(many=True)
+    payment_type = PaymentSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -155,6 +157,7 @@ class Orders(ViewSet):
         """
         customer = Customer.objects.get(user=request.auth.user)
         orders = Order.objects.filter(customer=customer)
+        print(f"Orders found for customer {customer.id}: {orders.count()}")
 
         payment = self.request.query_params.get('payment_id', None)
         if payment is not None:
@@ -164,3 +167,16 @@ class Orders(ViewSet):
             orders, many=True, context={'request': request})
 
         return Response(json_orders.data)
+
+    
+    def create(self, request):
+        customer = Customer.objects.get(user=request.auth.user)
+        product_id = request.data.get("product_id")
+
+        if not product_id:
+            return Response ({"message": "Missing product_id"}, status=status.HTTP_400_BAD_REQUEST)
+        order, created = Order.objects.get_or_create(customer=customer, payment_typ=None)
+
+        product = Product.objects.get(pk=product_id)
+        OrderProduct.objects.create(order=order, product=product)
+        return Response({"message": f"Added {product.name} to your cart"}, status=status.HTTP_201_CREATED)
