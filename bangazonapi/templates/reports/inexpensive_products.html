@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inexpensive Products</title>
+</head>
+<body>
+  <h1>Products $999 or Less</h1>
+
+  {% if products %}
+    <ul>
+      {% for product in products %}
+        <li>
+          {{ product.name }} - ${{ product.price }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No inexpensive products found.</p>
+  {% endif %}
+</body>
+</html>

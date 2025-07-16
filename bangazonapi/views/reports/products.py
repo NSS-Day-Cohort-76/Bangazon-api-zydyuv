@@ -1,4 +1,12 @@
+from django.shortcuts import render
+from bangazonapi.models import Product
 
+def inexpensive_products_report(request):
 
-def products_report(request):
-    pass
+    products = Product.objects.filter(price__lte=999)
+
+    context = {
+        'products': products
+    }
+
+    return render(request, 'reports/inexpensive_products.html', context)
