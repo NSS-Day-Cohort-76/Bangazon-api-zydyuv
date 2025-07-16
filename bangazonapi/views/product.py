@@ -245,11 +245,15 @@ class Products(ViewSet):
         products = Product.objects.all()
 
         # Support filtering by category and/or quantity
+        location_param = request.query_params.get('location', None)
         category = self.request.query_params.get('category', None)
         quantity = self.request.query_params.get('quantity', None)
         order = self.request.query_params.get('order_by', None)
         direction = self.request.query_params.get('direction', None)
         number_sold = self.request.query_params.get('number_sold', None)
+
+        if location_param:
+            products = products.filter(location__icontains=location_param)
 
         if order is not None:
             order_filter = order
