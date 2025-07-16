@@ -3,17 +3,27 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
-from bangazonapi.models import Customer
+from bangazonapi.models import Customer, Store  # ✅ ADD THIS
+from bangazonapi.views.store import StoreSerializer
 
 
 class CustomerSerializer(serializers.HyperlinkedModelSerializer):
     """JSON serializer for customers"""
+
+    store = serializers.SerializerMethodField()
+
+    def get_store(self, obj):
+        store = Store.objects.filter(owner=obj.user).first()
+        if store:
+            return StoreSerializer(store, context=self.context).data
+        return None
+
     class Meta:
         model = Customer
         url = serializers.HyperlinkedIdentityField(
-            view_name='customer', lookup_field='id'
+            view_name="customer", lookup_field="id"
         )
-        fields = ('id', 'url', 'user', 'phone_number', 'address')
+        fields = ("id", "url", "user", "phone_number", "address", "store")
         depth = 1
 
 
