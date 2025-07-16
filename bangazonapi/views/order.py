@@ -86,31 +86,44 @@ class Orders(ViewSet):
 
     def update(self, request, pk=None):
         """
-        @api {PUT} /order/:id PUT new payment for order
-        @apiName AddPayment
-        @apiGroup Orders
-
-        @apiHeader {String} Authorization Auth token
-        @apiHeaderExample {String} Authorization
-            Token 9ba45f09651c5b0c404f37a2d2572c026c146611
-
-        @apiParam {id} id Order Id route parameter
-        @apiParam {id} payment_type Payment Id to pay for the order
-        @apiParamExample {json} Input
-            {
-                "payment_type": 6
-            }
-
-        @apiSuccessExample {json} Success
-            HTTP/1.1 204 No Content
+        Handle PUT request to assign payment type to an order
         """
-        customer = Customer.objects.get(user=request.auth.user)
-        order = Order.objects.get(pk=pk, customer=customer)
-        payment_type_id = request.data["paymentTypeId"]
-        order.payment_type = Payment.objects.get(pk=payment_type_id)
-        order.save()
+        try:
+            # Ensure this is a real user
+            customer = Customer.objects.get(user=request.user)
 
-        return Response({"message": "Order completed."}, status=status.HTTP_200_OK)
+            # Check that the order belongs to the user
+            order = Order.objects.get(pk=pk, customer=customer)
+
+            # Validate payment_type is provided
+            payment_type_id = request.data.get("payment_type")
+            if not payment_type_id:
+                return Response(
+                    {"message": "Missing payment_type"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Optional: validate that the payment type exists and belongs to the user
+            try:
+                payment = Payment.objects.get(pk=payment_type_id, customer=customer)
+            except Payment.DoesNotExist:
+                return Response(
+                    {"message": "Invalid payment type"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Assign payment type to order and save
+            order.payment_type = payment
+            order.save()
+
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+        except Customer.DoesNotExist:
+            return Response({"message": "Customer not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Order.DoesNotExist:
+            return Response({"message": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as ex:
+            return Response({"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request):
         """
