@@ -87,13 +87,13 @@ class Orders(ViewSet):
         Handle PUT request to assign payment type to an order
         """
         try:
-
+            # Ensure this is a real user
             customer = Customer.objects.get(user=request.user)
 
-            
+            # Check that the order belongs to the user
             order = Order.objects.get(pk=pk, customer=customer)
 
-            
+            # Validate payment_type is provided
             payment_type_id = request.data.get("payment_type")
             if not payment_type_id:
                 return Response(
@@ -101,7 +101,7 @@ class Orders(ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            
+            # Optional: validate that the payment type exists and belongs to the user
             try:
                 payment = Payment.objects.get(pk=payment_type_id, customer=customer)
             except Payment.DoesNotExist:
@@ -110,7 +110,7 @@ class Orders(ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            
+            # Assign payment type to order and save
             order.payment_type = payment
             order.save()
 
