@@ -87,10 +87,10 @@ class OrderTests(APITestCase):
         self.test_add_product_to_order()
 
         # Step 2: Create a payment type
-        url = "/payment-types"
+        url = "/paymenttypes"
         data = {
-            "merchant": "Visa",
-            "acctNumber": "1234567890123456",
+            "merchant_name": "Visa",
+            "account_number": "1234567890123456",
             "expiration_date": "2026-01-01",
             "create_date": "2025-01-01"
         }
@@ -101,7 +101,7 @@ class OrderTests(APITestCase):
 
         # Step 3: PUT the payment type on the order
         url = "/orders/1"
-        data = { "payment_type": payment_type_id }
+        data = { "paymentTypeId": payment_type_id }
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         response = self.client.put(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
