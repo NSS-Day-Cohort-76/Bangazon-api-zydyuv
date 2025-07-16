@@ -2,7 +2,7 @@ from django.shortcuts import render
 from bangazonapi.models import Order, Customer
 from django.db.models import Sum
 
-def paid_orders_report(request):
+def orders_report(request):
     status = request.GET.get('status', '')
 
     if status == 'complete':
@@ -24,3 +24,6 @@ def paid_orders_report(request):
 
         return render(request, 'reports/paid_orders.html', context)
     return render(request, 'reports/paid_orders.html', {'orders': []})
+
+def incomplete_orders_report(request):
+    status = request.GET.get('status', '')
