@@ -11,4 +11,4 @@ from .customer import Customers
 from .user import Users
 from .store import StoreViewSet
 from .store import StoreSerializer
-from .reports import paid_orders_report
+from .reports import orders_report, products_report
