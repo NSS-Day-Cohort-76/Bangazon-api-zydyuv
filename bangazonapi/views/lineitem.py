@@ -34,6 +34,26 @@ class LineItems(ViewSet):
     #   model in your API, or incorrectly configured the `lookup_field`
     #   attribute on this field.
     # queryset = OrderProduct.objects.all()
+    def create(self, request):
+        """Add a product to the customer's open order (cart)"""
+        customer = Customer.objects.get(user=request.auth.user)
+        product_id = request.data.get("product_id")
+
+        if product_id is None:
+            return Response({"message": "Missing product_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        product = Product.objects.get(pk=product_id)
+
+        # Find or create the open order
+        open_order, created = Order.objects.get_or_create(
+            customer=customer,
+            payment_type=None  # This means it's still in cart
+        )
+
+        # Create the line item
+        OrderProduct.objects.create(order=open_order, product=product)
+
+        return Response({"message": "Product added to order."}, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, pk=None):
         """
