@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: left;
+      }
+    </style>
+    <title>Expensive Products</title>
+  </head>
+  <body>
+    <h1>Products $1000 or More</h1>
+
+    {% if products %}
+    <ul>
+      {% for product in products %}
+      <li>{{ product.name }} - ${{ product.price }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>No products found.</p>
+    {% endif %}
+  </body>
+</html>
