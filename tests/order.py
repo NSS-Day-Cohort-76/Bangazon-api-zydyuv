@@ -116,3 +116,49 @@ class OrderTests(APITestCase):
 
 
     # TODO: New line item is not added to closed order
+
+    def test_new_line_item_to_open_order(self):
+        """
+        Ensure that adding a product after completing an order creates a new open order.
+        """
+
+        # Step 1: Add first product to create the initial open order
+        self.test_add_product_to_order()
+
+        # Step 2: Create and assign a payment type to close the first order
+        url = "/payment-types"
+        data = {
+            "merchant": "MasterCard",
+            "acctNumber": "1111222233334444",
+            "expiration_date": "2026-01-01",
+            "create_date": "2025-01-01"
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        payment_type_id = response.data["id"]
+
+        # Complete the first order (assumed to be order 1)
+        url = "/orders/1"
+        data = { "payment_type": payment_type_id }
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        response = self.client.put(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Step 3: Add another product — it should create a new open order (order 2)
+        url = "/cart"
+        data = { "product_id": 1 }
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Step 4: Get the cart and ensure it's associated with a new order (id = 2)
+        url = "/cart"
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        response = self.client.get(url, None, format='json')
+        json_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(json_response["id"], 2)  # Should be a new order
+        self.assertEqual(json_response["size"], 1)
+        self.assertEqual(len(json_response["lineitems"]), 1)
