@@ -36,7 +36,7 @@ class StoreViewSet(viewsets.ViewSet):
 
         if Store.objects.filter(owner=user).exists():
             return Response(
-                {"message": "User already haws a store."},
+                {"message": "User already has a store."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         new_store = Store.objects.create(

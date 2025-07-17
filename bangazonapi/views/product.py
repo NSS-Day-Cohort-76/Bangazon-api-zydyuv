@@ -9,8 +9,11 @@ from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
 from bangazonapi.models import Product, Customer, ProductCategory
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
+from decimal import Decimal
+from bangazonapi.models import Like
+from bangazonapi.views.like import LikeSerializer
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -251,6 +254,12 @@ class Products(ViewSet):
         order = self.request.query_params.get('order_by', None)
         direction = self.request.query_params.get('direction', None)
         number_sold = self.request.query_params.get('number_sold', None)
+        min_price = self.request.query_params.get('min_price', None)
+
+        if min_price is not None:
+            min_price = Decimal(min_price)
+            products = products.filter(price__gte=min_price)
+            
 
         if location_param:
             products = products.filter(location__icontains=location_param)
@@ -297,3 +306,47 @@ class Products(ViewSet):
             return Response(None, status=status.HTTP_204_NO_CONTENT)
 
         return Response(None, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def like(self, request, pk=None):
+        """Like a product"""
+        user = request.auth.user
+        product = Product.objects.get(pk=pk)
+        like, created = Like.objects.get_or_create(user=user, product=product)
+        if created:
+            return Response({'message': 'Product liked'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'message': 'Already liked'}, status=status.HTTP_200_OK)
+
+    @like.mapping.delete
+    def unlike(self, request, pk=None):
+        """Remove like from a product"""
+        user = request.auth.user
+        try:
+            like = Like.objects.get(user=user, product__pk=pk)
+            like.delete()
+            return Response({'message': 'Like removed'}, status=status.HTTP_204_NO_CONTENT)
+        except Like.DoesNotExist:
+            return Response({'message': 'Like not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'], url_path='liked', permission_classes=[IsAuthenticated])
+    def liked(self, request):
+        """List all products liked by the current user"""
+        user = request.auth.user
+        likes = Like.objects.filter(user=user).select_related('product')
+
+        data = [{
+            'id': like.id,
+            'product': {
+                'id': like.product.id,
+                'name': like.product.name,
+                'price': like.product.price,
+                'description': like.product.description,
+                'location': like.product.location,
+                # Add any other product fields you want here
+            },
+            'created_at': like.created_at,
+        } for like in likes]
+
+        return Response(data, status=status.HTTP_200_OK)
+
