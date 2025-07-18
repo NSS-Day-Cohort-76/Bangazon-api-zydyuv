@@ -1,2 +1,3 @@
 from .orders import orders_report
 from .products import inexpensive_products_report, expensive_products_report
+from .favorite_sellers_report import favorite_sellers_report
