@@ -312,12 +312,44 @@ class Profile(ViewSet):
             ]
         """
         customer = Customer.objects.get(user=request.auth.user)
-        favorites = Favorite.objects.filter(customer=customer)
 
-        serializer = FavoriteSerializer(
-            favorites, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
+        if request.method == "GET":
+            favorites = Favorite.objects.filter(customer=customer)
+            serializer = FavoriteSerializer(
+                favorites, many=True, context={"request": request}
+            )
+            return Response(serializer.data)
+
+        if request.method == "POST":
+            store_id = request.data.get("store_id")
+            if not store_id:
+                return Response(
+                    {"message": "store_id is required"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                seller = Customer.objects.get(pk=store_id)
+                if seller == customer:
+                    return Response(
+                        {"message": "You cannot favorite yourself"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if Favorite.objects.filter(customer=customer, seller=seller).exists():
+                    return Response(
+                        {"message": "Seller is already in favorites"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                favorite = Favorite.objects.create(customer=customer, seller=seller)
+
+                serializer = FavoriteSerializer(favorite, context={"request": request})
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            except Customer.DoesNotExist:
+                return Response(
+                    {"message": "Seller not found"}, status=status.HTTP_404_NOT_FOUND
+                )
 
 
 class LineItemSerializer(serializers.HyperlinkedModelSerializer):
