@@ -2,6 +2,7 @@ import json
 import datetime
 from rest_framework import status
 from rest_framework.test import APITestCase
+from bangazonapi.models import Product, ProductRating, Customer
 
 
 class ProductTests(APITestCase):
@@ -46,7 +47,7 @@ class ProductTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(json_response["name"], "Kite")
-        self.assertEqual(json_response["price"], 14.99)
+        self.assertEqual(float(json_response["price"]), 14.99)
         self.assertEqual(json_response["quantity"], 60)
         self.assertEqual(json_response["description"], "It flies high")
         self.assertEqual(json_response["location"], "Pittsburgh")
@@ -75,7 +76,7 @@ class ProductTests(APITestCase):
         json_response = json.loads(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(json_response["name"], "Kite")
-        self.assertEqual(json_response["price"], 24.99)
+        self.assertEqual(float(json_response["price"]), 24.99)
         self.assertEqual(json_response["quantity"], 40)
         self.assertEqual(json_response["description"], "It flies very high")
         self.assertEqual(json_response["location"], "Pittsburgh")
@@ -108,8 +109,18 @@ class ProductTests(APITestCase):
         response = self.client.get(f"products/1")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_product_can_be_rated(self):
+        """Ensure that a product can be rated and average rating is correct."""
 
+        self.test_create_product()
 
-    
-    
-    """TODO: Product can be rated. Assert average rating exists."""
+        # Fetch the product we just created
+        product = Product.objects.first()
+        customer = Customer.objects.first()
+
+        # Add ratings for the product
+        ProductRating.objects.create(product=product, customer=customer, rating=5)
+        ProductRating.objects.create(product=product, customer=customer, rating=3)
+        ProductRating.objects.create(product=product, customer=customer, rating=4)
+
+        self.assertEqual(product.average_rating, 4.0)
