@@ -48,6 +48,16 @@ class StoreViewSet(viewsets.ViewSet):
         serializer = StoreSerializer(new_store, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def retrieve(self, request, pk=None):
+        try:
+            store = Store.objects.get(pk=pk)
+            serializer = StoreSerializer(store, context={"request": request})
+            return Response(serializer.data)
+        except Store.DoesNotExist:
+            return Response(
+                {"message": "Store not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def my_store(self, request):
         """Returns current user's store with Selling and Sold product lists"""
