@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Favorite Sellers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        h1 {
+            color: #222;
+        }
+
+        ul {
+            margin-top: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .empty {
+            font-style: italic;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    {% if customer %}
+        <h1>{{ customer.user.first_name }} {{ customer.user.last_name }}'s Favorite Sellers</h1>
+
+        {% if favorite_sellers %}
+            <ul>
+                {% for seller in favorite_sellers %}
+                    <li>
+                        {{ seller.user.first_name }} {{ seller.user.last_name }}
+                        {% if seller.store_name %} — <strong>{{ seller.store_name }}</strong>{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty">This customer hasn't favorited any sellers yet.</p>
+        {% endif %}
+    {% else %}
+        <h1>Customer not found</h1>
+        <p class="empty">Please check the customer ID in the URL.</p>
+    {% endif %}
+
+</body>
+</html>
