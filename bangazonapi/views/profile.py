@@ -5,7 +5,7 @@ from django.http import HttpResponseServerError
 from django.contrib.auth.models import User
 from rest_framework import serializers, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 from bangazonapi.models import Order, Customer, Product
@@ -328,7 +328,8 @@ class Profile(ViewSet):
                 )
 
             try:
-                seller = Customer.objects.get(pk=store_id)
+                store = Store.objects.get(pk=store_id)
+                seller = Customer.objects.get(user=store.owner)
                 if seller == customer:
                     return Response(
                         {"message": "You cannot favorite yourself"},
@@ -346,6 +347,10 @@ class Profile(ViewSet):
                 serializer = FavoriteSerializer(favorite, context={"request": request})
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+            except Store.DoesNotExist:
+                return Response(
+                    {"message": "Store not found"}, status=status.HTTP_404_NOT_FOUND
+                )
             except Customer.DoesNotExist:
                 return Response(
                     {"message": "Seller not found"}, status=status.HTTP_404_NOT_FOUND
@@ -429,12 +434,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(many=False)
     recommends = RecommenderSerializer(many=True)
     store = serializers.SerializerMethodField()
+    favorite_stores = serializers.SerializerMethodField()
+    recommended_items = serializers.SerializerMethodField()
 
-    def get_store(self, obj):
-        store = Store.objects.filter(owner=obj.user).first()
-        if store:
-            return StoreSerializer(store, context=self.context).data
-        return None
 
     class Meta:
         model = Customer
@@ -447,8 +449,27 @@ class ProfileSerializer(serializers.ModelSerializer):
             "payment_types",
             "recommends",
             "store",
+            "favorite_stores",
+            "recommended_items",
         )
         depth = 1
+
+    def get_store(self, obj):
+        store = Store.objects.filter(owner=obj.user).first()
+        if store:
+            return StoreSerializer(store, context=self.context).data
+        return None
+    
+    def get_favorite_stores(self, obj):
+        from bangazonapi.models import Favorite, Store
+        favorites = Favorite.objects.filter(customer=obj)
+        stores = [Store.objects.get(owner=fav.seller.user) for fav in favorites if Store.objects.filter(owner=fav.seller.user).exists()]
+        from bangazonapi.views.store import StoreSerializer
+        return StoreSerializer(stores, many=True, context=self.context).data
+    
+    def get_recommended_items(self, obj):
+        recommendations = Recommendation.objects.filter(customer=obj)
+        return RecommenderSerializer(recommendations, many=True, context=self.context).data
 
 
 class FavoriteUserSerializer(serializers.HyperlinkedModelSerializer):
@@ -496,3 +517,17 @@ class FavoriteSerializer(serializers.HyperlinkedModelSerializer):
         model = Favorite
         fields = ("id", "seller")
         depth = 2
+
+# class Customers(ViewSet):
+#     permission_classes = [IsAuthenticated]
+
+#     @action(detail=False, methods=["get"])
+#     def profile(self, request):
+#         user = request.auth.user
+#         try:
+#             customer = Customer.objects.get(user=user)
+#         except Customer.DoesNotExist:
+#             return Response({"message": "Customer not found"}, status=404)
+
+#         serializer = CustomerSerializer(customer, context={"request": request})
+#         return Response(serializer.data)

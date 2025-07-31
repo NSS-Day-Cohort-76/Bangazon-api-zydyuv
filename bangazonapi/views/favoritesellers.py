@@ -90,3 +90,30 @@ class FavoriteViewSet(viewsets.ViewSet):
             return Response({"message": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)
         except Favorite.DoesNotExist:
             return Response({"message": "Favorite not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(detail=False, methods=["post"], url_path="toggle")
+    def toggle_favorite(self, request):
+        customer = self.get_customer(request)
+        store_id = request.data.get("store_id")
+
+        if not store_id:
+            return Response({"message": "Missing store_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from bangazonapi.models import Store
+            store = Store.objects.get(pk=store_id)
+            seller = Customer.objects.get(user=store.owner)
+
+            favorite = Favorite.objects.filter(customer=customer, seller=seller).first()
+
+            if favorite:
+                favorite.delete()
+                return Response({"message": "Unfavorited"}, status=status.HTTP_204_NO_CONTENT)
+            else:
+                Favorite.objects.create(customer=customer, seller=seller)
+                return Response({"message": "Favorited"}, status=status.HTTP_201_CREATED)
+
+        except Store.DoesNotExist:
+            return Response({"message": "Store not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Customer.DoesNotExist:
+            return Response({"message": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)
