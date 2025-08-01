@@ -406,6 +406,7 @@ class ProfileProductSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "price"
         )
 
 
