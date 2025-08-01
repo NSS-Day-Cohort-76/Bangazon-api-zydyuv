@@ -13,4 +13,4 @@ from .store import StoreViewSet
 from .store import StoreSerializer
 from .reports import orders_report, inexpensive_products_report
 from .like import Likes, LikeSerializer
-from .favorite_sellers import FavoriteViewSet, FavoriteSerializer, SellerSerializer, SellerUserSerializer
+from .favoritesellers import FavoriteViewSet, FavoriteSerializer, SellerSerializer, SellerUserSerializer

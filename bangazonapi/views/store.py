@@ -3,7 +3,7 @@
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
 from rest_framework import status
-from bangazonapi.models import Store
+from bangazonapi.models import Store, Customer, Favorite
 from django.contrib.auth.models import User
 from .product import ProductSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
@@ -13,14 +13,25 @@ from rest_framework.decorators import action
 class StoreSerializer(serializers.ModelSerializer):
     owner = serializers.StringRelatedField()
     products = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
 
     class Meta:
         model = Store
-        fields = ("id", "name", "description", "owner", "products")
+        fields = ("id", "name", "description", "owner", "products", "is_favorited")
 
     def get_products(self, store):
         products = store.products.filter(quantity__gt=0)
         return ProductSerializer(products, many=True, context=self.context).data
+    
+    def get_is_favorited(self, store):
+        user = self.context['request'].user
+        try:
+            customer = Customer.objects.get(user=user)
+            seller = Customer.objects.get(user=store.owner)
+            return Favorite.objects.filter(customer=customer, seller=seller).exists()
+        except Customer.DoesNotExist:
+            return False
+
 
 
 class StoreViewSet(viewsets.ViewSet):
@@ -94,3 +105,46 @@ class StoreViewSet(viewsets.ViewSet):
                 "sold": sold_serialized,
             }
         )
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk=None):
+        user = request.user
+        try:
+            customer = Customer.objects.get(user=user)
+        except Customer.DoesNotExist:
+            return Response({"message": "Customer not found"}, status=404)
+
+        try:
+            store = Store.objects.get(pk=pk)
+            seller_user = store.owner
+            seller = Customer.objects.get(user=seller_user)
+            Favorite.objects.create(customer=customer, seller=seller)
+            return Response({"message": "Store favorited"}, status=201)
+        except Store.DoesNotExist:
+            return Response({"message": "Store not found"}, status=404)
+        except Customer.DoesNotExist:
+            return Response({"message": "Seller not found"}, status=404)
+
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def unfavorite(self, request, pk=None):
+        user = request.user
+        try:
+            customer = Customer.objects.get(user=user)
+        except Customer.DoesNotExist:
+            return Response({"message": "Customer not found"}, status=404)
+
+        try:
+            store = Store.objects.get(pk=pk)
+            seller_user = store.owner
+            seller = Customer.objects.get(user=seller_user)
+            
+            favorite = Favorite.objects.get(customer=customer, seller=seller)
+            favorite.delete()
+            
+            return Response({"message": "Store unfavorited"}, status=204)
+        except Store.DoesNotExist:
+            return Response({"message": "Store not found"}, status=404)
+        except Customer.DoesNotExist:
+            return Response({"message": "Seller not found"}, status=404)
+        except Favorite.DoesNotExist:
+            return Response({"message": "Favorite not found"}, status=404)

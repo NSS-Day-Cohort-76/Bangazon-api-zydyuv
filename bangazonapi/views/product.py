@@ -1,4 +1,5 @@
 """View module for handling requests about products"""
+from django.contrib.auth.models import User
 from rest_framework.decorators import action
 from bangazonapi.models.recommendation import Recommendation
 import base64
@@ -298,14 +299,26 @@ class Products(ViewSet):
         if request.method == "POST":
             rec = Recommendation()
             rec.recommender = Customer.objects.get(user=request.auth.user)
-            rec.customer = Customer.objects.get(user__id=request.data["recipient"])
-            rec.product = Product.objects.get(pk=pk)
 
+            # Get the username from the frontend
+            to_username = request.data.get("to_username")
+            if not to_username:
+                return Response({"error": "to_username is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                to_user = User.objects.get(username=to_username)
+                rec.customer = Customer.objects.get(user=to_user)
+            except User.DoesNotExist:
+                return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            except Customer.DoesNotExist:
+                return Response({"error": "Customer does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+            rec.product = Product.objects.get(pk=pk)
             rec.save()
 
-            return Response(None, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": "Recommendation sent!"}, status=status.HTTP_201_CREATED)
 
-        return Response(None, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response(None, status=status.HTTP_405_METHOD_NOT_ALLOWED)    
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):

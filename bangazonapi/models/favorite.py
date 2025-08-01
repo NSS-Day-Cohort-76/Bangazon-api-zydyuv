@@ -10,3 +10,6 @@ class Favorite(models.Model):
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="favorites")
     seller = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="favorited_by")
+
+    class Meta:
+        unique_together = ("customer", "seller")
